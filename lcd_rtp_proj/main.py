@@ -110,7 +110,7 @@ ds.second(curr_time[5])
 
 print("from RTC : %s" % (ds.date_time()))
 
-#ds.date_time([2001, 5, 21, 0, 21, 30, 0, 0]) # set datetime.ds.date_time([2023, 3, 2, 0, 8, 17, 50, 0]) # set datetime.
+#ds.date_time([2001, 5, 21, 0, 21, 30, 0, 0]) # set datetime
 
 while True:
     
@@ -142,12 +142,12 @@ while True:
     display.set_pos(85,140)
     display.print(str("%02d" % (Min,)))   # display minute
     
-    """
-    display.set_pos(85,160)
-    display.print(str("%02d" % (Sec,)))   # display second
-    """
-    
     display.set_font(tt24)
+    
+    display.set_pos(85,190)
+    display.print("-----------")   # display blip
+    
+    #display.set_font(tt24)
     display.set_color(CHARTREUSE,BLUE)
     
     day = week[ds.weekday()]
