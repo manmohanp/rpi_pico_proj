@@ -4,7 +4,7 @@ from machine import Pin, SPI
 import tt24
 import time
 import utime
-
+#https://github.com/Guitarman9119/Raspberry-Pi-Pico-/tree/main/DS1302%20RTC
 from ds1302 import DS1302
 
 import freesansbold64
@@ -37,37 +37,33 @@ LIGHT_GREEN = const(0X87F0)  # (128, 255, 128)
 LIGHT_SLATE_BLUE = const(0X841F)  # (128, 128, 255)
 WHITE = const(0XFFFF)  # (255, 255, 255)
 BLACK = const(0)
+GREY = const(141414)
 
 led = Pin(25, Pin.OUT)
 led(1)
 
 #UTC offset time of state/country in hrs, mins stored in dictionary
 time_zones={       
-0:["JUNEAU",-9,0],
+0:["HAWAII",-10,0],
 1:["LOS ANGELES",-8,0],
 2:["MEXICO CITY",-6,0],
 3:["MIAMI",-5,0],
 4:["SANTIAGO",-3,0],
-5:["NEW YORK",-5,0],
-6:["RIO",-3,0],
-7:["NUUK",-3,0],
-8:["ACCRA",0,0],
-9:["LISBON",0,0],
-10:["LONDON",0,0],
-11:["PARIS",1,0],
-12:["MOSCOW",3,0],
-13:["DUBAI",4,0],
-14:["KARACHI",5,0],
-15:["NEW DELHI",5,30],
-16:["COLOMBO",5,30],
-17:["DHAKA",6,0],
-18:["BANGKOK",7,0],
-19:["BEIJING",8,0],
-20:["SINGAPORE",8,0],
-21:["HONGKONG",8,0],
-22:["TOKYO",9,0],
-23:["SYDNEY",11,0],
-24:["AUCKLAND",13,0],
+5:["CARACAS",-4,0],
+6:["NEW YORK",-5,0],
+7:["RIO DE JANIERO",-3,0],
+8:["LONDON",0,0],
+9:["PARIS",1,0],
+10:["MOSCOW",3,0],
+11:["DUBAI",4,0],
+12:["DELHI",5,30],
+13:["DHAKA",6,0],
+14:["BANGKOK",7,0],
+15:["BEIJING",8,0],
+16:["SINGAPORE",8,0],
+17:["TOKYO",9,0],
+18:["SYDNEY",11,0],
+19:["AUCKLAND",13,0],
 }
 
 week=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
@@ -85,32 +81,40 @@ display = ILI9341(spi, cs=Pin(17), dc=Pin(15), rst=Pin(14), w=320, h=240, r=2)
 
 ds = DS1302(Pin(6),Pin(7),Pin(3))
 
+#buttons
+green_button = Pin(10, Pin.IN)
+red_button = Pin(2, Pin.IN)
 
 #display.erase()
-display.fill_rectangle(0, 0, 240, 320, BLUE)
-display.set_color(CHARTREUSE,BLUE)
+display.fill_rectangle(0, 0, 240, 320,WHITE) #top part
 
-offset_sec=time_zones[10][1]*60*60+ time_zones[10][2]*60  # convert UTC offset to seconds
+time_zone_counter = 8
 
-#print (utime.localtime())
+ds.date_time()
 
-#ds.date_time(utime.localtime())
+# [year,month,day,weekday,hour,minute,second]
+#ds.date_time([2023, 1, 17, 0, 23, 04, 00])
 
-curr_time=utime.localtime(offset_sec+utime.time())
+offset_sec=time_zones[time_zone_counter][1]*60*60+ time_zones[time_zone_counter][2]*60  # convert to UTC offset to seconds, for London
 
-"""
-ds.year(curr_time[0])
-ds.month(curr_time[1])
-ds.day(curr_time[2])
-ds.weekday(curr_time[6])
-ds.hour(curr_time[3])
-ds.minute(curr_time[4])
-ds.second(curr_time[5])
-"""
+#curr_time=utime.localtime(offset_sec+utime.time())
 
-print("from RTC : %s" % (ds.date_time()))
+curr_time=utime.localtime(offset_sec + utime.mktime([ds.year(),ds.month(),ds.day(),ds.hour(),ds.minute(),ds.second(),ds.weekday(),"0"]))
 
-#ds.date_time([2001, 5, 21, 0, 21, 30, 0, 0]) # set datetime
+#ds.date_time([curr_time[0],curr_time[1],curr_time[2],curr_time[6],curr_time[3],curr_time[4],curr_time[5]]) ##update to RTC
+
+flag = 1
+
+green_pressed_count = 0
+red_pressed_count = 0
+
+background_flag = 0
+
+
+display.set_color(BLACK, WHITE)
+display.set_font(tt24)
+display.set_pos(5,5)
+display.print(time_zones[time_zone_counter][0]) #display London
 
 while True:
     
@@ -128,11 +132,59 @@ while True:
     #print(curr_time)
         
     #curr_date=str(curr_time[2])+" / "+str(curr_time[1])+" / "+str(curr_time[0])
+
+    #print(button.value())
     
-    display.set_color(YELLOW,BLUE)
+    
+    if green_button.value()==1:
+        green_pressed_count = green_pressed_count+1
+    else:
+        green_pressed_count = 0
+        
+    if red_button.value()==1:
+        red_pressed_count = red_pressed_count+1
+    else:
+        red_pressed_count = 0
+        
+    if green_pressed_count > 2:
+        #ds.date_time([2018, 9, 5, 2, 8, 45, 0, 0]) # set datetime
+        print(time_zone_counter)
+        if time_zone_counter == 18:
+            time_zone_counter = 0
+        else:
+            time_zone_counter = time_zone_counter+1
+        display.erase()
+        offset_sec=time_zones[time_zone_counter][1]*60*60+ time_zones[time_zone_counter][2]*60  # convert UTC offset to seconds
+        curr_time=utime.localtime(offset_sec + utime.mktime([ds.year(),ds.month(),ds.day(),ds.hour(),ds.minute(),ds.second(),ds.weekday(),"0"]))
+        #ds.date_time([curr_time[0],curr_time[1],curr_time[2],curr_time[6],curr_time[3],curr_time[4],curr_time[5]]) ##update to RTC
+        display.set_font(tt24)
+        display.set_pos(5,5)
+        display.print(time_zones[time_zone_counter][0]) #display London
+        
+    
+    if red_pressed_count > 2:
+        
+        if background_flag == 0:
+            background_flag = 1
+            display.fill_rectangle(0, 0, 240, 320, GREY)
+            
+        display.set_color(WHITE,GREY)
+        display.set_font(tt24)
+        display.set_pos(5,5)
+        display.print(time_zones[time_zone_counter][0]) #display London
+    else:
+        if background_flag == 1:
+            background_flag = 0
+            display.fill_rectangle(0, 0, 240, 320, WHITE)
+        display.set_color(BLACK, WHITE)
+        display.set_font(tt24)
+        display.set_pos(5,5)
+        display.print(time_zones[time_zone_counter][0]) #display London
+        
+        
     display.set_font(freesansbold64)
     
-    (Hr,Min,Sec)=(ds.hour(),ds.minute(),ds.second())      # obtain current hour,min of the city/state
+    (Hr,Min,Sec)=(curr_time[3],curr_time[4],curr_time[5])      # obtain current hour,min of the city/state
     
     display.set_pos(85,80)
 
@@ -144,18 +196,35 @@ while True:
     
     display.set_font(tt24)
     
-    display.set_pos(85,190)
-    display.print("-----------")   # display blip
+    
+    if flag:
+        display.set_pos(85,195)
+        display.print("-----------")   # display blip
+        flag = 0
+    else:
+        if red_pressed_count > 2:
+            display.set_color(GREY,GREY)
+        else:
+            display.set_color(WHITE,WHITE)
+                
+        display.set_pos(85,195)
+        display.print("-----------")   # display blip
+        flag = 1
+
     
     #display.set_font(tt24)
-    display.set_color(CHARTREUSE,BLUE)
     
-    day = week[ds.weekday()]
+    if red_pressed_count > 2:
+        display.set_color(WHITE,GREY)
+    else:
+        display.set_color(BLACK,WHITE)
+    
+    day = week[curr_time[6]]
     
     display.set_pos(50,265)
     display.print(day)
     
-    dd = ds.day()
+    dd = curr_time[2]
         
     i = dd if (dd < 20) else (dd % 10)
     if i == 1:
@@ -167,7 +236,7 @@ while True:
     elif dd < 100:
       suffix = 'th'
       
-    dt = str("%s%s, %s %s" % (ds.day(), suffix, month[ds.month()-1], ds.year()))
+    dt = str("%s%s, %s %s" % (curr_time[2], suffix, month[curr_time[1]-1], curr_time[0]))
     
     display.set_pos(50,290)
     display.print(dt)
